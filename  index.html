@@ -1,0 +1,2511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Home Appraisal</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root {
+      --navy:    #1C2D4E;
+      --navy-2:  #243660;
+      --gold:    #B8924A;
+      --gold-lt: #F2E8D9;
+      --green:   #2DA55E;
+      --orange:  #D97706;
+      --red:     #DC2626;
+      --gray:    #94A3B8;
+      --bg:      #F4F2ED;
+      --card:    #FFFFFF;
+      --text:    #1A202C;
+      --subtext: #64748B;
+      --border:  #E2DDD5;
+      --header-h: 64px;
+      --tab-h: 56px;
+      /* aliases for legacy references */
+      --blue: var(--navy);
+      --blue-dark: var(--navy-2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── Header ─────────────────────────── */
+    .app-header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 2px 16px rgba(28,45,78,.3);
+      border-bottom: 2px solid var(--gold);
+    }
+    .header-icon { font-size: 22px; margin-right: 10px; opacity: .9; }
+    .header-title {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 700;
+      flex: 1;
+      letter-spacing: .3px;
+    }
+    .header-title span {
+      color: var(--gold);
+    }
+    .header-date {
+      color: rgba(255,255,255,.55);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .3px;
+    }
+
+    /* ── Tab Bar ─────────────────────────── */
+    .tab-bar {
+      background: var(--card);
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: var(--header-h);
+      z-index: 190;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex: 1;
+      min-width: 68px;
+      padding: 11px 6px 9px;
+      background: none;
+      border: none;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--gray);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      position: relative;
+      transition: color .2s;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+    .tab-btn.active { color: var(--navy); }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 15%; right: 15%;
+      height: 2px;
+      background: var(--gold);
+      border-radius: 2px 2px 0 0;
+    }
+    .tab-icon { font-size: 19px; }
+    .tab-dot {
+      position: absolute;
+      top: 8px; right: calc(50% - 15px);
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      border: 1.5px solid var(--card);
+      display: none;
+    }
+    .tab-dot.show { display: block; }
+
+    /* ── Content ─────────────────────────── */
+    .content {
+      padding: 20px 16px 56px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Section Heading ─────────────────── */
+    .section-heading { margin-bottom: 20px; }
+    .section-heading h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -.3px;
+    }
+    .section-heading p {
+      font-size: 13.5px;
+      color: var(--subtext);
+      margin-top: 4px;
+    }
+
+    /* ── Cards ───────────────────────────── */
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+      border: 1px solid rgba(0,0,0,.03);
+    }
+    .card-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      padding-left: 10px;
+      border-left: 3px solid var(--gold);
+    }
+
+    /* ── Form Fields ─────────────────────── */
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--subtext);
+      margin-bottom: 6px;
+      letter-spacing: .2px;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--text);
+      background: #FAFAF8;
+      -webkit-appearance: none;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(28,45,78,.08);
+      background: var(--card);
+    }
+    textarea { resize: vertical; min-height: 78px; line-height: 1.5; }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2394A3B8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 13px center;
+      background-color: #FAFAF8;
+      padding-right: 34px;
+    }
+
+    /* ── Rating Items ─────────────────────── */
+    .rating-item {
+      padding-bottom: 20px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rating-item:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    .rating-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .rating-pills {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .pill {
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: #FAFAF8;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--subtext);
+      cursor: pointer;
+      transition: all .15s;
+      letter-spacing: .1px;
+    }
+    .pill[data-r="Excellent"].on { background:#16A34A; border-color:#16A34A; color:#fff; }
+    .pill[data-r="Good"].on      { background:#22C55E; border-color:#22C55E; color:#fff; }
+    .pill[data-r="Fair"].on      { background:#D97706; border-color:#D97706; color:#fff; }
+    .pill[data-r="Poor"].on      { background:#DC2626; border-color:#DC2626; color:#fff; }
+    .pill[data-r="N/A"].on       { background:#94A3B8; border-color:#94A3B8; color:#fff; }
+    .rating-notes {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 64px;
+      outline: none;
+      background: #FAFAF8;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .rating-notes:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(28,45,78,.08); background: var(--card); }
+
+    /* ── Rooms ───────────────────────────── */
+    .room-card {
+      background: var(--bg);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      border-left: 3px solid var(--gold);
+    }
+    .room-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+    .room-name-input {
+      flex: 1;
+      border: none;
+      background: none;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--navy);
+      outline: none;
+      padding: 0;
+      min-width: 0;
+      font-family: inherit;
+    }
+    .room-del {
+      background: none;
+      border: none;
+      color: #CBD5E1;
+      font-size: 24px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0 2px;
+      transition: color .15s;
+    }
+    .room-del:hover { color: var(--red); }
+
+    /* ── RP Data Sliders ─────────────────── */
+    .rp-price-display {
+      text-align: center;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--navy);
+      margin: 8px 0 16px;
+      letter-spacing: -1px;
+    }
+    .rp-price-display span { font-size: 20px; font-weight: 600; vertical-align: super; color: var(--gold); }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 3px;
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--navy);
+      box-shadow: 0 2px 8px rgba(28,45,78,.35);
+      cursor: pointer;
+      border: 2px solid #fff;
+    }
+    #rp-price {
+      background: linear-gradient(to right, var(--navy) 0%, var(--navy) 50%, var(--border) 50%, var(--border) 100%);
+    }
+    .price-range-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--subtext);
+      margin-top: 8px;
+      font-weight: 500;
+    }
+    .conf-track-wrap { position: relative; margin-bottom: 6px; }
+    #rp-confidence {
+      background: linear-gradient(to right,
+        #DC2626 0%, #DC2626 33%,
+        #D97706 33%, #D97706 66%,
+        #16A34A 66%, #16A34A 100%);
+    }
+    #rp-confidence::-webkit-slider-thumb {
+      background: white;
+      border: 3px solid var(--navy);
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .conf-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+    }
+    .conf-label {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 5px 6px;
+      border-radius: 6px;
+      transition: all .2s;
+      opacity: .35;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+    .conf-label.low    { color: #DC2626; }
+    .conf-label.medium { color: #D97706; }
+    .conf-label.high   { color: #16A34A; }
+    .conf-label.active { opacity: 1; background: var(--bg); }
+
+    /* ── Room Extras ─────────────────────── */
+    .room-extras { margin-top: 12px; }
+    .room-extras-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--subtext);
+      text-transform: uppercase;
+      letter-spacing: .7px;
+      margin-bottom: 7px;
+    }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .chip {
+      padding: 6px 13px;
+      border-radius: 7px;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      color: var(--subtext);
+      letter-spacing: .1px;
+    }
+    .chip.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+    .chip.on-green { background: var(--green); border-color: var(--green); color: #fff; }
+
+    /* ── Yes/No Radio Buttons ───────────── */
+    .yn-option {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 8px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      background: #FAFAF8;
+      color: var(--subtext);
+    }
+    .yn-option input[type="radio"] { display: none; }
+    .yn-option.selected-yes     { border-color: var(--green); background: #DCFCE7; color: #15803D; }
+    .yn-option.selected-no      { border-color: var(--red);   background: #FEE2E2; color: #B91C1C; }
+    .yn-option.selected-unknown { border-color: var(--gray);  background: #F1F5F9; color: #475569; }
+
+    /* ── Feature Toggles ─────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .feature-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #FAFAF8;
+      border-radius: 11px;
+      padding: 12px 14px;
+      cursor: pointer;
+      gap: 8px;
+      border: 1.5px solid var(--border);
+      transition: all .2s;
+    }
+    .feature-toggle.on {
+      border-color: var(--navy);
+      background: #EEF2F9;
+    }
+    .feature-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .feature-emoji { font-size: 18px; }
+
+    /* iOS toggle switch */
+    .ios-switch {
+      position: relative;
+      width: 44px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .ios-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .ios-track {
+      position: absolute;
+      inset: 0;
+      background: #CBD5E1;
+      border-radius: 13px;
+      transition: background .2s;
+      cursor: pointer;
+    }
+    .ios-track::after {
+      content: '';
+      position: absolute;
+      width: 22px; height: 22px;
+      background: white;
+      border-radius: 50%;
+      top: 2px; left: 2px;
+      transition: transform .2s;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    }
+    .ios-switch input:checked + .ios-track { background: var(--navy); }
+    .ios-switch input:checked + .ios-track::after { transform: translateX(18px); }
+
+    .add-room-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 13px;
+      background: none;
+      border: 2px dashed var(--border);
+      border-radius: 11px;
+      color: var(--navy);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: border-color .2s, background .2s;
+      font-family: inherit;
+    }
+    .add-room-btn:hover { border-color: var(--navy); background: #EEF2F9; }
+
+    /* ── Nav Buttons ─────────────────────── */
+    .nav-row { display: flex; gap: 10px; margin-top: 12px; }
+    .nav-btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      letter-spacing: .2px;
+      transition: opacity .15s;
+    }
+    .nav-btn.sec { background: #EEF2F9; color: var(--navy); }
+    .nav-btn.pri { background: var(--navy); color: #fff; }
+    .nav-btn:active { opacity: .8; }
+
+    /* ── Report Summary ──────────────────── */
+    .rpt-prop-name { font-size: 18px; font-weight: 700; margin-bottom: 3px; color: var(--navy); }
+    .rpt-prop-meta { font-size: 13px; color: var(--subtext); margin-bottom: 12px; line-height: 1.6; }
+
+    .rpt-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gold);
+      margin: 20px 0 8px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .rpt-section-title:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+
+    .rpt-row {
+      display: flex;
+      align-items: flex-start;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 10px;
+    }
+    .rpt-row:last-child { border-bottom: none; }
+    .rpt-row-name { flex: 1; font-size: 14.5px; font-weight: 500; }
+    .rpt-row-note { font-size: 12px; color: var(--subtext); margin-top: 2px; line-height: 1.4; }
+
+    .badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      letter-spacing: .3px;
+    }
+    .badge.Excellent, .badge.Good { background: #DCFCE7; color: #15803D; }
+    .badge.Fair                   { background: #FEF3C7; color: #92400E; }
+    .badge.Poor                   { background: #FEE2E2; color: #B91C1C; }
+    .badge.na                     { background: #F1F5F9; color: #475569; }
+
+    /* ── Generate Button ─────────────────── */
+    .gen-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+      box-shadow: 0 4px 20px rgba(28,45,78,.3);
+      transition: opacity .15s, transform .1s;
+      font-family: inherit;
+      letter-spacing: .3px;
+      border-bottom: 3px solid rgba(184,146,74,.6);
+    }
+    .gen-btn:active { opacity: .9; transform: scale(.99); }
+    .gen-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .gen-note {
+      text-align: center;
+      font-size: 12.5px;
+      color: var(--subtext);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    /* ── Toast ───────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--navy);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 999;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+      white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,.2);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- ──────────────────────── HEADER ──────────────────────── -->
+<header class="app-header">
+  <span class="header-icon">🏠</span>
+  <span class="header-title">Home Appraisal</span>
+  <span class="header-date" id="hdr-date"></span>
+</header>
+
+<!-- ──────────────────────── TABS ────────────────────────── -->
+<nav class="tab-bar">
+  <button class="tab-btn active" data-tab="property" onclick="switchTab('property')">
+    <span class="tab-icon">📋</span>Property
+    <span class="tab-dot" id="dot-property"></span>
+  </button>
+  <button class="tab-btn" data-tab="exterior" onclick="switchTab('exterior')">
+    <span class="tab-icon">🏡</span>Exterior
+    <span class="tab-dot" id="dot-exterior"></span>
+  </button>
+  <button class="tab-btn" data-tab="interior" onclick="switchTab('interior')">
+    <span class="tab-icon">🛋️</span>Interior
+    <span class="tab-dot" id="dot-interior"></span>
+  </button>
+  <button class="tab-btn" data-tab="systems" onclick="switchTab('systems')">
+    <span class="tab-icon">⚙️</span>Systems
+    <span class="tab-dot" id="dot-systems"></span>
+  </button>
+  <button class="tab-btn" data-tab="report" onclick="switchTab('report')">
+    <span class="tab-icon">📄</span>Report
+  </button>
+</nav>
+
+<!-- ──────────────────────── CONTENT ─────────────────────── -->
+<div class="content">
+
+  <!-- ===== PROPERTY DETAILS ===== -->
+  <div id="sec-property" class="section active">
+    <div class="section-heading">
+      <h2>Property Details</h2>
+      <p>Basic information about the property.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Location</div>
+      <div class="field">
+        <label class="field-label">Street Address</label>
+        <input type="text" id="p-address" placeholder="123 Main Street" />
+      </div>
+      <div class="row2 field">
+        <div>
+          <label class="field-label">City</label>
+          <input type="text" id="p-city" placeholder="City" />
+        </div>
+        <div>
+          <label class="field-label">State</label>
+          <input type="text" id="p-state" placeholder="ST" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Post Code</label>
+        <input type="text" id="p-zip" placeholder="Post code" style="max-width:160px" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Property Info</div>
+      <div class="row2 field">
+        <div>
+          <label class="field-label">Property Type</label>
+          <select id="p-type">
+            <option value="">Select…</option>
+            <option>House</option>
+            <option>Farm</option>
+            <option>Land</option>
+            <option>Rural</option>
+            <option>Lifestyle</option>
+            <option>Riverfront</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Year Built</label>
+          <input type="number" id="p-year" placeholder="e.g. 1998" />
+        </div>
+      </div>
+      <div class="row3 field">
+        <div>
+          <label class="field-label">m²</label>
+          <input type="number" id="p-sqft" placeholder="e.g. 180" />
+        </div>
+        <div>
+          <label class="field-label">Bedrooms</label>
+          <input type="number" id="p-beds" placeholder="3" min="0" oninput="syncRoomsToSpec()" />
+        </div>
+        <div>
+          <label class="field-label">Bathrooms</label>
+          <input type="number" id="p-baths" placeholder="2" step="0.5" min="0" oninput="syncRoomsToSpec()" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Lot Size</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="p-lot" placeholder="e.g. 650" style="flex:1" />
+          <select id="p-lot-unit" style="width:100px">
+            <option value="m²">m²</option>
+            <option value="acres">acres</option>
+            <option value="Ha">Ha</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Inspection</div>
+      <div class="field">
+        <label class="field-label">Inspection Date</label>
+        <input type="date" id="p-date" style="max-width:220px" />
+      </div>
+      <div class="field">
+        <label class="field-label">General Notes</label>
+        <textarea id="p-notes" placeholder="Overall impressions, context, access notes…"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">RP Data Estimate</div>
+
+      <!-- Price slider -->
+      <div class="field">
+        <label class="field-label">Estimated Value</label>
+        <div class="rp-price-display" id="rp-price-display"><span>$</span>500,000</div>
+        <input type="range" id="rp-price"
+          min="50000" max="3500000" step="5000" value="500000"
+          oninput="updatePriceSlider(this.value)" />
+        <div class="price-range-labels">
+          <span>$50k</span><span>$500k</span><span>$1M</span><span>$2M</span><span>$3M</span><span>$3.5M</span>
+        </div>
+      </div>
+
+      <!-- Confidence slider -->
+      <div class="field" style="margin-top:20px">
+        <label class="field-label">Confidence Level</label>
+        <div class="conf-track-wrap">
+          <input type="range" id="rp-confidence"
+            min="0" max="2" step="1" value="1"
+            oninput="updateConfSlider(this.value)" />
+        </div>
+        <div class="conf-labels">
+          <span class="conf-label low"    id="conf-low">Low</span>
+          <span class="conf-label medium active" id="conf-medium">Medium</span>
+          <span class="conf-label high"   id="conf-high">High</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="nav-btn pri" onclick="switchTab('exterior')">Next: Exterior →</button>
+    </div>
+  </div>
+
+  <!-- ===== EXTERIOR ===== -->
+  <div id="sec-exterior" class="section">
+    <div class="section-heading">
+      <h2>Exterior</h2>
+      <p>Rate and note each exterior feature.</p>
+    </div>
+    <div class="card">
+      <div class="card-label">Optional Features</div>
+      <p style="font-size:13px;color:var(--subtext);margin-bottom:12px">Toggle on any features present at this property.</p>
+      <div class="feature-grid" id="feature-toggles"></div>
+    </div>
+    <!-- Pool Details — shown only when pool is toggled on -->
+    <div class="card" id="pool-details-card" style="display:none">
+      <div class="card-label">🏊 Pool Details</div>
+      <div class="row2 field">
+        <div>
+          <label class="field-label">Pool Size</label>
+          <input type="text" id="pool-size" placeholder="e.g. 12×24 ft" />
+        </div>
+        <div>
+          <label class="field-label">Shape</label>
+          <select id="pool-shape">
+            <option value="">Select…</option>
+            <option>Rectangular</option>
+            <option>Oval</option>
+            <option>Kidney</option>
+            <option>L-Shaped</option>
+            <option>Freeform</option>
+            <option>Round</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2 field">
+        <div>
+          <label class="field-label">Heating</label>
+          <select id="pool-heating">
+            <option value="">Select…</option>
+            <option>None / Unheated</option>
+            <option>Gas Heater</option>
+            <option>Heat Pump</option>
+            <option>Solar</option>
+            <option>Electric Resistance</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Filtration System</label>
+          <select id="pool-filtration">
+            <option value="">Select…</option>
+            <option>Sand Filter</option>
+            <option>Cartridge Filter</option>
+            <option>DE (Diatomaceous Earth)</option>
+            <option>Saltwater System</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Chemical / Sanitization Type</label>
+        <select id="pool-chemicals">
+          <option value="">Select…</option>
+          <option>Chlorine</option>
+          <option>Saltwater (Chlorine Generator)</option>
+          <option>Bromine</option>
+          <option>UV / Ozone System</option>
+          <option>Mineral System</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Cleaning System</label>
+        <select id="pool-cleaning">
+          <option value="">Select…</option>
+          <option>Manual (Brush &amp; Vacuum)</option>
+          <option>Suction-Side Cleaner</option>
+          <option>Pressure-Side Cleaner</option>
+          <option>Robotic Cleaner</option>
+          <option>In-Floor Cleaning System</option>
+          <option>None</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Additional Pool Notes</label>
+        <textarea id="pool-notes" placeholder="Condition of liner, decking, equipment, safety fencing…"></textarea>
+      </div>
+    </div>
+
+    <!-- Shed Details — shown only when shed is toggled on -->
+    <div class="card" id="shed-details-card" style="display:none">
+      <div class="card-label">🏚️ Shed / Outbuilding Details</div>
+      <div class="row2 field">
+        <div>
+          <label class="field-label">Size</label>
+          <input type="text" id="shed-size" placeholder="e.g. 6×9 m" />
+        </div>
+        <div>
+          <label class="field-label">Roller Door Height</label>
+          <input type="text" id="shed-door-height" placeholder="e.g. 2.4 m" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Power Connected</label>
+        <div class="row3">
+          <label class="yn-option" id="shed-power-yes">
+            <input type="radio" name="shed-power" value="Yes" onchange="ynSelect('shed-power','Yes')"> Yes
+          </label>
+          <label class="yn-option" id="shed-power-no">
+            <input type="radio" name="shed-power" value="No" onchange="ynSelect('shed-power','No')"> No
+          </label>
+          <label class="yn-option" id="shed-power-unknown">
+            <input type="radio" name="shed-power" value="Unknown" onchange="ynSelect('shed-power','Unknown')"> Unknown
+          </label>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">3-Phase Power Connected</label>
+        <div class="row3">
+          <label class="yn-option" id="shed-3phase-yes">
+            <input type="radio" name="shed-3phase" value="Yes" onchange="ynSelect('shed-3phase','Yes')"> Yes
+          </label>
+          <label class="yn-option" id="shed-3phase-no">
+            <input type="radio" name="shed-3phase" value="No" onchange="ynSelect('shed-3phase','No')"> No
+          </label>
+          <label class="yn-option" id="shed-3phase-unknown">
+            <input type="radio" name="shed-3phase" value="Unknown" onchange="ynSelect('shed-3phase','Unknown')"> Unknown
+          </label>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Council Permits</label>
+        <div class="row3">
+          <label class="yn-option" id="shed-permits-yes">
+            <input type="radio" name="shed-permits" value="Yes" onchange="ynSelect('shed-permits','Yes')"> Yes
+          </label>
+          <label class="yn-option" id="shed-permits-no">
+            <input type="radio" name="shed-permits" value="No" onchange="ynSelect('shed-permits','No')"> No
+          </label>
+          <label class="yn-option" id="shed-permits-unknown">
+            <input type="radio" name="shed-permits" value="Unknown" onchange="ynSelect('shed-permits','Unknown')"> Unknown
+          </label>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Additional Shed Notes</label>
+        <textarea id="shed-notes" placeholder="Construction type, condition, access, storage…"></textarea>
+      </div>
+    </div>
+
+    <!-- Solar Details — shown only when solar is toggled on -->
+    <div class="card" id="solar-details-card" style="display:none">
+      <div class="card-label">☀️ Solar Details</div>
+      <div class="field">
+        <label class="field-label">System Size (kW)</label>
+        <input type="text" id="solar-size" placeholder="e.g. 6.6 kW" />
+      </div>
+      <div class="field">
+        <label class="field-label">Battery Connected</label>
+        <div class="row3">
+          <label class="yn-option" id="solar-battery-yes">
+            <input type="radio" name="solar-battery" value="Yes" onchange="ynSelect('solar-battery','Yes'); toggleSolarBattery(true)"> Yes
+          </label>
+          <label class="yn-option" id="solar-battery-no">
+            <input type="radio" name="solar-battery" value="No" onchange="ynSelect('solar-battery','No'); toggleSolarBattery(false)"> No
+          </label>
+          <label class="yn-option" id="solar-battery-unknown">
+            <input type="radio" name="solar-battery" value="Unknown" onchange="ynSelect('solar-battery','Unknown'); toggleSolarBattery(false)"> Unknown
+          </label>
+        </div>
+      </div>
+      <div class="field" id="solar-battery-size-field" style="display:none">
+        <label class="field-label">Battery Size (kWh)</label>
+        <input type="text" id="solar-battery-size" placeholder="e.g. 13.5 kWh" />
+      </div>
+      <div class="field">
+        <label class="field-label">Additional Solar Notes</label>
+        <textarea id="solar-notes" placeholder="Inverter brand, panel brand, age, feed-in tariff…"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Condition Ratings</div>
+      <div id="exterior-items"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">General Exterior Notes</div>
+      <textarea id="ext-general" placeholder="Any additional exterior observations…"></textarea>
+    </div>
+    <div class="nav-row">
+      <button class="nav-btn sec" onclick="switchTab('property')">← Property</button>
+      <button class="nav-btn pri" onclick="switchTab('interior')">Interior →</button>
+    </div>
+  </div>
+
+  <!-- ===== INTERIOR ===== -->
+  <div id="sec-interior" class="section">
+    <div class="section-heading">
+      <h2>Interior</h2>
+      <p>Rate each room. Add or remove rooms as needed.</p>
+    </div>
+    <div class="card">
+      <div class="card-label">Rooms</div>
+      <div id="room-list"></div>
+      <button class="add-room-btn" onclick="addRoom()">＋ Add Room</button>
+    </div>
+    <div class="card">
+      <div class="card-label">General Interior Notes</div>
+      <textarea id="int-general" placeholder="Flooring, paint, lighting, overall impression…"></textarea>
+    </div>
+    <div class="nav-row">
+      <button class="nav-btn sec" onclick="switchTab('exterior')">← Exterior</button>
+      <button class="nav-btn pri" onclick="switchTab('systems')">Systems →</button>
+    </div>
+  </div>
+
+  <!-- ===== SYSTEMS ===== -->
+  <div id="sec-systems" class="section">
+    <div class="section-heading">
+      <h2>Systems</h2>
+      <p>Rate the major mechanical systems.</p>
+    </div>
+    <div class="card">
+      <div class="card-label">Condition Ratings</div>
+      <div id="systems-items"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">General Systems Notes</div>
+      <textarea id="sys-general" placeholder="Age of systems, recent replacements, concerns…"></textarea>
+    </div>
+    <div class="nav-row">
+      <button class="nav-btn sec" onclick="switchTab('interior')">← Interior</button>
+      <button class="nav-btn pri" onclick="switchTab('report')">View Report →</button>
+    </div>
+  </div>
+
+  <!-- ===== REPORT ===== -->
+  <div id="sec-report" class="section">
+    <div class="section-heading">
+      <h2>Report</h2>
+      <p>Review your appraisal summary, then generate a PDF to share.</p>
+    </div>
+    <div class="card" id="rpt-preview">
+      <p style="color:var(--subtext);font-size:15px">Fill in the other sections, then tap "View Report" to see your summary here.</p>
+    </div>
+    <!-- Valuation section -->
+    <div class="card">
+      <div class="card-label">Valuation</div>
+      <div class="field">
+        <label class="field-label">Agent's Appraisal Price</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px;font-weight:600;color:var(--subtext)">$</span>
+          <input type="number" id="val-agent" placeholder="e.g. 750000" step="1000" style="flex:1" oninput="updateValDisplay()" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Vendor's Expected Price</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px;font-weight:600;color:var(--subtext)">$</span>
+          <input type="number" id="val-vendor" placeholder="e.g. 800000" step="1000" style="flex:1" oninput="updateValDisplay()" />
+        </div>
+      </div>
+      <div id="val-diff-display" style="display:none;margin-top:8px;padding:12px 14px;border-radius:10px;font-size:14px;font-weight:500"></div>
+    </div>
+
+    <button class="gen-btn" onclick="generatePDF()">📄 Generate PDF to Share</button>
+    <p class="gen-note">On iPad, tap Share in the preview to AirDrop, email, or save.</p>
+    <div class="nav-row" style="margin-top:14px">
+      <button class="nav-btn sec" onclick="switchTab('systems')">← Systems</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ──────────────────────── SCRIPT ───────────────────────── -->
+<script>
+/* ============================================================
+   CONFIG — exterior & systems items
+   ============================================================ */
+const EXT_ITEMS = [
+  { key:'roof', label:'Roof', subfields:[
+    { id:'roof-type', label:'Roof Type', type:'select',
+      options:['Tile','Tin / Metal','Asphalt Shingle','Slate','Concrete','Flat / TPO','Other'] }
+  ]},
+  { key:'siding', label:'Exterior Cladding', subfields:[
+    { id:'siding-type', label:'Cladding Type', type:'select',
+      options:['Brick','Weatherboard / Timber','Fibre Cement','Vinyl / PVC','Rendered Masonry','Hardiplank','Colorbond Steel','Stone / Sandstone','Stucco','Mud Brick','Hebel / AAC Panel','Aluminium Composite','Other'] }
+  ]},
+  { key:'windows', label:'Windows & Doors', subfields:[
+    { id:'windows-type', label:'Frame Type', type:'select',
+      options:['Aluminium','Timber','uPVC','Steel','Composite'] }
+  ]},
+  { key:'foundation', label:'Foundation', subfields:[
+    { id:'foundation-type', label:'Foundation Type', type:'checkboxes',
+      options:['Concrete Slab','Stumps / Timber Stumps','Steel Stumps','Brick Piers','Strip Footing','Other'] }
+  ]},
+  { key:'driveway',    label:'Driveway & Walkways' },
+  { key:'landscaping', label:'Landscaping / Yard' },
+  { key:'garage',      label:'Garage' },
+];
+
+// Optional features — toggled on/off by the user
+const OPT_FEATURES = [
+  { key:'pool', label:'Pool', icon:'🏊' },
+  { key:'shed', label:'Shed / Outbuilding', icon:'🏚️' },
+  { key:'solar', label:'Solar', icon:'☀️' },
+  { key:'fence',label:'Side Access',     icon:'🚪' },
+];
+let enabledFeatures = {}; // key → true/false
+
+const SYS_ITEMS = [
+  { key:'ac', label:'Heating & Cooling', subfields:[
+    { id:'ac-types', label:'System Type', type:'checkboxes',
+      options:['Split System','Ducted Reverse Cycle','Ducted Evaporative','Ducted Gas','Gas Furnace','Wood Fire'] }
+  ]},
+  { key:'waterheater', label:'Water Heater', subfields:[
+    { id:'wh-types', label:'Heater Type', type:'checkboxes',
+      options:['Gas','Electric','Heat Pump','Solar'] }
+  ]},
+];
+
+const RATINGS = ['Excellent','Good','Fair','Poor','N/A'];
+
+// Fixed rooms always present regardless of bed/bath count
+const FIXED_ROOMS = ['Kitchen','Living Room','Dining Room'];
+
+// Tags so we can identify auto-generated rooms and replace them cleanly
+const TAG_BED  = 'auto-bed';
+const TAG_BATH = 'auto-bath';
+
+/* ============================================================
+   ROOMS STATE
+   ============================================================ */
+let roomId = 0;
+function makeRoom(name, tag = null) {
+  return { id: ++roomId, name, rating: '', notes: '', tag };
+}
+
+// Start with fixed rooms + sensible defaults (3 bed, 2 bath)
+let rooms = [
+  ...FIXED_ROOMS.map(n => makeRoom(n)),
+  makeRoom('Primary Bedroom', TAG_BED),
+  makeRoom('Bedroom 2',       TAG_BED),
+  makeRoom('Bedroom 3',       TAG_BED),
+  makeRoom('Bathroom 1',      TAG_BATH),
+  makeRoom('Bathroom 2',      TAG_BATH),
+];
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date();
+  document.getElementById('hdr-date').textContent =
+    today.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('p-date').value = today.toISOString().split('T')[0];
+
+  buildFeatureToggles();
+  rebuildExteriorItems();
+  buildRatingSection('systems-items', SYS_ITEMS, 'sys');
+  renderRooms();
+  updatePriceSlider(500000);
+  updateConfSlider(1);
+});
+
+/* ============================================================
+   RP DATA SLIDERS
+   ============================================================ */
+function updatePriceSlider(val) {
+  val = parseInt(val);
+  const display = document.getElementById('rp-price-display');
+  display.innerHTML = '<span>$</span>' + val.toLocaleString('en-US');
+
+  // Update track fill
+  const slider = document.getElementById('rp-price');
+  const min = parseInt(slider.min), max = parseInt(slider.max);
+  const pct = ((val - min) / (max - min)) * 100;
+  slider.style.background =
+    `linear-gradient(to right, var(--blue) 0%, var(--blue) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
+}
+
+const CONF_LEVELS = ['low','medium','high'];
+const CONF_LABELS = ['Low','Medium','High'];
+function updateConfSlider(val) {
+  val = parseInt(val);
+  CONF_LEVELS.forEach((lvl, i) => {
+    const el = document.getElementById('conf-' + lvl);
+    el.classList.toggle('active', i === val);
+  });
+}
+
+/* ============================================================
+   TAB NAVIGATION
+   ============================================================ */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById(`sec-${tab}`).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  if (tab === 'report') buildReport();
+  updateDots();
+}
+
+function updateDots() {
+  // Exterior dot: any rating selected
+  const allExtItems = [...EXT_ITEMS, ...OPT_FEATURES.filter(f => enabledFeatures[f.key])];
+  const extRated = allExtItems.some(i => getRating('ext', i.key));
+  document.getElementById('dot-exterior').classList.toggle('show', extRated);
+
+  // Interior dot: any room rated
+  const intRated = rooms.some(r => r.rating);
+  document.getElementById('dot-interior').classList.toggle('show', intRated);
+
+  // Systems dot
+  const sysRated = SYS_ITEMS.some(i => getRating('sys', i.key));
+  document.getElementById('dot-systems').classList.toggle('show', sysRated);
+
+  // Property dot
+  const propFilled = !!document.getElementById('p-address').value;
+  document.getElementById('dot-property').classList.toggle('show', propFilled);
+}
+
+/* ============================================================
+   OPTIONAL FEATURE TOGGLES
+   ============================================================ */
+function buildFeatureToggles() {
+  const grid = document.getElementById('feature-toggles');
+  grid.innerHTML = '';
+  OPT_FEATURES.forEach(feat => {
+    const wrap = document.createElement('label');
+    wrap.className = 'feature-toggle' + (enabledFeatures[feat.key] ? ' on' : '');
+    wrap.innerHTML = `
+      <span class="feature-label">
+        <span class="feature-emoji">${feat.icon}</span>
+        <span>${feat.label.split(' /')[0]}</span>
+      </span>
+      <span class="ios-switch">
+        <input type="checkbox" ${enabledFeatures[feat.key] ? 'checked' : ''} onchange="toggleFeature('${feat.key}', this.checked, this.closest('label'))">
+        <span class="ios-track"></span>
+      </span>
+    `;
+    grid.appendChild(wrap);
+  });
+}
+
+function toggleFeature(key, enabled, labelEl) {
+  enabledFeatures[key] = enabled;
+  labelEl.classList.toggle('on', enabled);
+  // Show/hide feature detail cards
+  if (key === 'pool') {
+    const card = document.getElementById('pool-details-card');
+    card.style.display = enabled ? 'block' : 'none';
+    if (enabled) card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+  if (key === 'shed') {
+    const card = document.getElementById('shed-details-card');
+    card.style.display = enabled ? 'block' : 'none';
+    if (enabled) card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+  if (key === 'solar') {
+    const card = document.getElementById('solar-details-card');
+    card.style.display = enabled ? 'block' : 'none';
+    if (enabled) card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    if (!enabled) toggleSolarBattery(false);
+  }
+  rebuildExteriorItems();
+  updateDots();
+}
+
+function rebuildExteriorItems() {
+  // Combine base items + enabled optional features
+  const activeOptional = OPT_FEATURES.filter(f => enabledFeatures[f.key]);
+  const allItems = [...EXT_ITEMS, ...activeOptional];
+  buildRatingSection('exterior-items', allItems, 'ext');
+}
+
+/* ============================================================
+   BUILD RATING SECTIONS
+   ============================================================ */
+function buildRatingSection(containerId, items, prefix) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  items.forEach(item => container.appendChild(makeRatingItem(prefix, item)));
+}
+
+function makeRatingItem(prefix, item) {
+  const wrap = document.createElement('div');
+  wrap.className = 'rating-item';
+  wrap.id = `ri-${prefix}-${item.key}`;
+
+  const name = document.createElement('div');
+  name.className = 'rating-name';
+  name.textContent = item.label;
+  wrap.appendChild(name);
+
+  const pills = document.createElement('div');
+  pills.className = 'rating-pills';
+  RATINGS.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'pill';
+    btn.dataset.r = r;
+    btn.textContent = r;
+    btn.onclick = () => selectRating(prefix, item.key, r, btn);
+    pills.appendChild(btn);
+  });
+  wrap.appendChild(pills);
+
+  // Optional subfields (select, checkboxes)
+  if (item.subfields) {
+    item.subfields.forEach(sf => {
+      if (sf.type === 'select') {
+        const sfWrap = document.createElement('div');
+        sfWrap.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:9px';
+        const sfLabel = document.createElement('label');
+        sfLabel.textContent = sf.label;
+        sfLabel.style.cssText = 'font-size:14px;font-weight:500;white-space:nowrap;min-width:80px';
+        const sfInput = document.createElement('select');
+        sfInput.id = sf.id;
+        sfInput.style.cssText = 'flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;background:var(--bg);-webkit-appearance:none;outline:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%238e8e93\' stroke-width=\'1.5\' fill=\'none\' stroke-linecap=\'round\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px';
+        const blank = document.createElement('option');
+        blank.value = ''; blank.textContent = 'Select…';
+        sfInput.appendChild(blank);
+        sf.options.forEach(o => {
+          const opt = document.createElement('option');
+          opt.value = o; opt.textContent = o;
+          sfInput.appendChild(opt);
+        });
+        sfWrap.appendChild(sfLabel);
+        sfWrap.appendChild(sfInput);
+        wrap.appendChild(sfWrap);
+
+      } else if (sf.type === 'checkboxes') {
+        const sfGroup = document.createElement('div');
+        sfGroup.style.cssText = 'margin-bottom:9px';
+        const sfLabel = document.createElement('div');
+        sfLabel.textContent = sf.label;
+        sfLabel.style.cssText = 'font-size:14px;font-weight:500;margin-bottom:7px';
+        sfGroup.appendChild(sfLabel);
+        const cbRow = document.createElement('div');
+        cbRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:7px';
+        sf.options.forEach(o => {
+          const cbId = sf.id + '-' + o.replace(/[^a-z0-9]/gi,'_');
+          const lbl = document.createElement('label');
+          lbl.style.cssText = 'display:flex;align-items:center;gap:5px;padding:7px 13px;border:1.5px solid var(--border);border-radius:20px;font-size:14px;cursor:pointer;transition:all .15s;background:var(--bg)';
+          lbl.htmlFor = cbId;
+          const cb = document.createElement('input');
+          cb.type = 'checkbox'; cb.id = cbId; cb.value = o;
+          cb.style.cssText = 'display:none';
+          cb.onchange = () => {
+            lbl.style.background   = cb.checked ? 'var(--blue)' : 'var(--bg)';
+            lbl.style.borderColor  = cb.checked ? 'var(--blue)' : 'var(--border)';
+            lbl.style.color        = cb.checked ? '#fff' : 'var(--text)';
+          };
+          lbl.appendChild(cb);
+          lbl.appendChild(document.createTextNode(o));
+          cbRow.appendChild(lbl);
+        });
+        sfGroup.appendChild(cbRow);
+        wrap.appendChild(sfGroup);
+      }
+    });
+  }
+
+  const notes = document.createElement('textarea');
+  notes.className = 'rating-notes';
+  notes.placeholder = `Notes about ${item.label.toLowerCase()}…`;
+  notes.id = `rn-${prefix}-${item.key}`;
+  notes.addEventListener('input', updateDots);
+  wrap.appendChild(notes);
+
+  return wrap;
+}
+
+function selectRating(prefix, key, value, btn) {
+  const wrap = document.getElementById(`ri-${prefix}-${key}`);
+  wrap.querySelectorAll('.pill').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  updateDots();
+}
+
+function getRating(prefix, key) {
+  const wrap = document.getElementById(`ri-${prefix}-${key}`);
+  if (!wrap) return '';
+  const on = wrap.querySelector('.pill.on');
+  return on ? on.dataset.r : '';
+}
+
+function getNotes(prefix, key) {
+  const el = document.getElementById(`rn-${prefix}-${key}`);
+  return el ? el.value.trim() : '';
+}
+
+/* ============================================================
+   ROOMS
+   ============================================================ */
+function renderRooms() {
+  const list = document.getElementById('room-list');
+  list.innerHTML = '';
+  rooms.forEach(room => list.appendChild(makeRoomCard(room)));
+}
+
+function makeRoomCard(room) {
+  const div = document.createElement('div');
+  div.className = 'room-card';
+  div.id = `room-${room.id}`;
+
+  // Header row
+  const row = document.createElement('div');
+  row.className = 'room-row';
+
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.className = 'room-name-input';
+  nameInput.value = room.name;
+  nameInput.placeholder = 'Room name';
+  nameInput.oninput = e => { room.name = e.target.value; };
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'room-del';
+  delBtn.textContent = '×';
+  delBtn.onclick = () => deleteRoom(room.id);
+
+  row.appendChild(nameInput);
+  row.appendChild(delBtn);
+  div.appendChild(row);
+
+  // Rating pills
+  const pills = document.createElement('div');
+  pills.className = 'rating-pills';
+  pills.id = `rpills-${room.id}`;
+  RATINGS.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'pill' + (room.rating === r ? ' on' : '');
+    btn.dataset.r = r;
+    btn.textContent = r;
+    btn.onclick = () => selectRoomRating(room, r, btn);
+    pills.appendChild(btn);
+  });
+  div.appendChild(pills);
+
+  // ── Room type flags ──────────────────────────────
+  const isBathroom = room.tag === TAG_BATH || room.name.toLowerCase().includes('bath') || room.name.toLowerCase().includes('ensuite') || room.name.toLowerCase().includes('powder');
+
+  // ── Flooring type chips ──────────────────────────
+  const floorTypes = isBathroom
+    ? ['Tiles', 'Timber', 'Micro Cement']
+    : ['Carpet', 'Hardwood', 'Floating Floor', 'Vinyl', 'Tiles'];
+  if (!room.flooring) room.flooring = [];
+
+  const floorWrap = document.createElement('div');
+  floorWrap.className = 'room-extras';
+  const floorLbl = document.createElement('div');
+  floorLbl.className = 'room-extras-label';
+  floorLbl.textContent = 'Flooring';
+  floorWrap.appendChild(floorLbl);
+  const floorRow = document.createElement('div');
+  floorRow.className = 'chip-row';
+  floorTypes.forEach(ft => {
+    const chip = document.createElement('button');
+    chip.className = 'chip' + (room.flooring.includes(ft) ? ' on' : '');
+    chip.textContent = ft;
+    chip.onclick = () => {
+      if (room.flooring.includes(ft)) {
+        room.flooring = room.flooring.filter(f => f !== ft);
+        chip.classList.remove('on');
+      } else {
+        room.flooring.push(ft);
+        chip.classList.add('on');
+      }
+    };
+    floorRow.appendChild(chip);
+  });
+  floorWrap.appendChild(floorRow);
+  div.appendChild(floorWrap);
+
+  // ── Robe options (bedrooms only) ─────────────────
+  const isBedroom = room.tag === TAG_BED || room.name.toLowerCase().includes('bed');
+  if (isBedroom) {
+    if (!room.robes) room.robes = [];
+    const robeTypes = ['Built-in Robe', 'Walk-in Robe'];
+    const robeWrap = document.createElement('div');
+    robeWrap.className = 'room-extras';
+    const robeLbl = document.createElement('div');
+    robeLbl.className = 'room-extras-label';
+    robeLbl.textContent = 'Robes';
+    robeWrap.appendChild(robeLbl);
+    const robeRow = document.createElement('div');
+    robeRow.className = 'chip-row';
+    robeTypes.forEach(rt => {
+      const chip = document.createElement('button');
+      chip.className = 'chip' + (room.robes.includes(rt) ? ' on' : '');
+      chip.textContent = rt;
+      chip.onclick = () => {
+        if (room.robes.includes(rt)) {
+          room.robes = room.robes.filter(r => r !== rt);
+          chip.classList.remove('on');
+        } else {
+          room.robes.push(rt);
+          chip.classList.add('on');
+        }
+      };
+      robeRow.appendChild(chip);
+    });
+    robeWrap.appendChild(robeRow);
+    div.appendChild(robeWrap);
+  }
+
+  // ── Bathroom extras ──────────────────────────────
+  if (isBathroom) {
+    if (!room.bathroom) room.bathroom = { showerSize: '', hasBath: false };
+
+    const bathWrap = document.createElement('div');
+    bathWrap.className = 'room-extras';
+    const bathLbl = document.createElement('div');
+    bathLbl.className = 'room-extras-label';
+    bathLbl.textContent = 'Bathroom Details';
+    bathWrap.appendChild(bathLbl);
+
+    // Shower size select
+    const shwRow = document.createElement('div');
+    shwRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:9px';
+    const shwL = document.createElement('label');
+    shwL.textContent = 'Shower Size';
+    shwL.style.cssText = 'font-size:14px;font-weight:500;min-width:100px;white-space:nowrap';
+    const shwSel = document.createElement('select');
+    shwSel.style.cssText = 'flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;background:var(--bg);-webkit-appearance:none;outline:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%238e8e93\' stroke-width=\'1.5\' fill=\'none\' stroke-linecap=\'round\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px';
+    [['','Select…'],['Small (700×700mm)','Small (700×700mm)'],['Standard (900×900mm)','Standard (900×900mm)'],['Large (1200×900mm)','Large (1200×900mm)'],['Frameless Walk-in','Frameless Walk-in'],['No Shower','No Shower']].forEach(([v,t]) => {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = t;
+      if (v === room.bathroom.showerSize) opt.selected = true;
+      shwSel.appendChild(opt);
+    });
+    shwSel.onchange = e => { room.bathroom.showerSize = e.target.value; };
+    shwRow.appendChild(shwL); shwRow.appendChild(shwSel);
+    bathWrap.appendChild(shwRow);
+
+    // Bath toggle
+    const bathTogRow = document.createElement('div');
+    bathTogRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px';
+    const bathTogLbl = document.createElement('span');
+    bathTogLbl.style.cssText = 'font-size:14px;font-weight:500';
+    bathTogLbl.textContent = '🛁 Bath';
+    const bathSwitch = document.createElement('label');
+    bathSwitch.className = 'ios-switch';
+    bathSwitch.innerHTML = `<input type="checkbox" ${room.bathroom.hasBath ? 'checked' : ''}><span class="ios-track"></span>`;
+    bathSwitch.querySelector('input').addEventListener('change', function() { room.bathroom.hasBath = this.checked; });
+    bathTogRow.appendChild(bathTogLbl); bathTogRow.appendChild(bathSwitch);
+    bathWrap.appendChild(bathTogRow);
+
+    div.appendChild(bathWrap);
+  }
+
+  // ── Ceiling fan toggle (not in bathrooms) ────────
+  if (!isBathroom) {
+  if (room.ceilingFan === undefined) room.ceilingFan = false;
+  const fanWrap = document.createElement('div');
+  fanWrap.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin:8px 0';
+  const fanLbl = document.createElement('span');
+  fanLbl.style.cssText = 'font-size:14px;font-weight:500';
+  fanLbl.textContent = '🌀 Ceiling Fan';
+  const fanSwitch = document.createElement('label');
+  fanSwitch.className = 'ios-switch';
+  fanSwitch.innerHTML = `<input type="checkbox" ${room.ceilingFan ? 'checked' : ''}><span class="ios-track"></span>`;
+  fanSwitch.querySelector('input').addEventListener('change', function() { room.ceilingFan = this.checked; });
+  fanWrap.appendChild(fanLbl);
+  fanWrap.appendChild(fanSwitch);
+  div.appendChild(fanWrap);
+  }
+
+  // ── Kitchen extras (only for rooms named Kitchen) ─
+  const isKitchen = room.name.toLowerCase().includes('kitchen');
+  if (isKitchen) {
+    if (!room.kitchen) room.kitchen = { oven:'', stove:'', pantry:'', dishwasher:false };
+
+    const kitWrap = document.createElement('div');
+    kitWrap.className = 'room-extras';
+    const kitLbl = document.createElement('div');
+    kitLbl.className = 'room-extras-label';
+    kitLbl.textContent = 'Kitchen Details';
+    kitWrap.appendChild(kitLbl);
+
+    // Helper: small select
+    function kitSelect(id, label, opts, currentVal, onChange) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:9px';
+      const l = document.createElement('label');
+      l.textContent = label;
+      l.style.cssText = 'font-size:14px;font-weight:500;min-width:90px;white-space:nowrap';
+      const sel = document.createElement('select');
+      sel.id = id;
+      sel.style.cssText = 'flex:1;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;background:var(--bg);-webkit-appearance:none;outline:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%238e8e93\' stroke-width=\'1.5\' fill=\'none\' stroke-linecap=\'round\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px';
+      [['','Select…'], ...opts.map(o => [o,o])].forEach(([v,t]) => {
+        const opt = document.createElement('option');
+        opt.value = v; opt.textContent = t;
+        if (v === currentVal) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.onchange = e => onChange(e.target.value);
+      row.appendChild(l); row.appendChild(sel);
+      return row;
+    }
+
+    kitWrap.appendChild(kitSelect('kit-oven-'+room.id, 'Oven', ['Gas','Electric','Induction','None'], room.kitchen.oven, v => room.kitchen.oven = v));
+    kitWrap.appendChild(kitSelect('kit-stove-'+room.id, 'Stove / Cooktop', ['Gas','Electric','Induction','None'], room.kitchen.stove, v => room.kitchen.stove = v));
+    kitWrap.appendChild(kitSelect('kit-pantry-'+room.id, 'Pantry', ["Butler's Pantry","Walk-in Pantry","Cupboard","None"], room.kitchen.pantry, v => room.kitchen.pantry = v));
+
+    // Dishwasher chip
+    const dwRow = document.createElement('div');
+    dwRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px';
+    const dwLbl = document.createElement('span');
+    dwLbl.style.cssText = 'font-size:14px;font-weight:500';
+    dwLbl.textContent = '🍽️ Dishwasher';
+    const dwSwitch = document.createElement('label');
+    dwSwitch.className = 'ios-switch';
+    dwSwitch.innerHTML = `<input type="checkbox" ${room.kitchen.dishwasher ? 'checked' : ''}><span class="ios-track"></span>`;
+    dwSwitch.querySelector('input').addEventListener('change', function() { room.kitchen.dishwasher = this.checked; });
+    dwRow.appendChild(dwLbl); dwRow.appendChild(dwSwitch);
+    kitWrap.appendChild(dwRow);
+
+    div.appendChild(kitWrap);
+  }
+
+  // Notes
+  const ta = document.createElement('textarea');
+  ta.className = 'rating-notes';
+  ta.style.marginTop = '8px';
+  ta.placeholder = 'Notes about this room…';
+  ta.value = room.notes;
+  ta.oninput = e => { room.notes = e.target.value; updateDots(); };
+  div.appendChild(ta);
+
+  return div;
+}
+
+function selectRoomRating(room, value, btn) {
+  room.rating = value;
+  const pills = document.getElementById(`rpills-${room.id}`);
+  if (pills) pills.querySelectorAll('.pill').forEach(p => p.classList.remove('on'));
+  btn.classList.add('on');
+  updateDots();
+}
+
+function syncRoomsToSpec() {
+  const beds  = Math.max(0, parseInt(document.getElementById('p-beds').value)  || 0);
+  const baths = Math.max(0, parseFloat(document.getElementById('p-baths').value) || 0);
+
+  // Separate fixed/manual rooms from auto-generated ones
+  const fixed   = rooms.filter(r => !r.tag);
+  const autoBed  = rooms.filter(r => r.tag === TAG_BED);
+  const autoBath = rooms.filter(r => r.tag === TAG_BATH);
+
+  // Build bedroom list — keep existing rated rooms, add/trim as needed
+  const newBeds = [];
+  for (let i = 0; i < beds; i++) {
+    if (autoBed[i]) {
+      newBeds.push(autoBed[i]); // preserve any ratings/notes already entered
+    } else {
+      const label = i === 0 ? 'Primary Bedroom' : `Bedroom ${i + 1}`;
+      newBeds.push(makeRoom(label, TAG_BED));
+    }
+  }
+
+  // Build bathroom list — handle half baths (0.5 increments)
+  const fullBaths = Math.floor(baths);
+  const hasHalf   = (baths % 1) >= 0.5;
+  const totalBaths = fullBaths + (hasHalf ? 1 : 0);
+  const newBaths = [];
+  for (let i = 0; i < totalBaths; i++) {
+    if (autoBath[i]) {
+      newBaths.push(autoBath[i]);
+    } else {
+      const isHalf = hasHalf && i === totalBaths - 1;
+      const label  = totalBaths === 1
+        ? (isHalf ? 'Bathroom (Ensuite / Half)' : 'Bathroom')
+        : isHalf ? 'Ensuite / Half Bathroom' : `Bathroom ${i + 1}`;
+      newBaths.push(makeRoom(label, TAG_BATH));
+    }
+  }
+
+  rooms = [...fixed, ...newBeds, ...newBaths];
+  renderRooms();
+}
+
+function addRoom() {
+  const room = { id: ++roomId, name: 'New Room', rating: '', notes: '' };
+  rooms.push(room);
+  const card = makeRoomCard(room);
+  document.getElementById('room-list').appendChild(card);
+  setTimeout(() => {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.querySelector('.room-name-input').select();
+  }, 80);
+}
+
+function deleteRoom(id) {
+  rooms = rooms.filter(r => r.id !== id);
+  const el = document.getElementById(`room-${id}`);
+  if (el) el.remove();
+}
+
+/* ============================================================
+   COLLECT ALL DATA
+   ============================================================ */
+function collectData() {
+  return {
+    property: {
+      address:   document.getElementById('p-address').value.trim(),
+      city:      document.getElementById('p-city').value.trim(),
+      state:     document.getElementById('p-state').value.trim(),
+      zip:       document.getElementById('p-zip').value.trim(),
+      type:      document.getElementById('p-type').value,
+      year:      document.getElementById('p-year').value,
+      sqft:      document.getElementById('p-sqft').value,
+      beds:      document.getElementById('p-beds').value,
+      baths:     document.getElementById('p-baths').value,
+      lot:       [document.getElementById('p-lot').value.trim(), document.getElementById('p-lot-unit').value].filter(Boolean).join(' '),
+      date:      document.getElementById('p-date').value,
+      notes:     document.getElementById('p-notes').value.trim(),
+      rpPrice:   parseInt(document.getElementById('rp-price').value),
+      rpConfidence:  CONF_LABELS[parseInt(document.getElementById('rp-confidence').value)],
+      agentPrice:    parseFloat(document.getElementById('val-agent').value)  || null,
+      vendorPrice:   parseFloat(document.getElementById('val-vendor').value) || null,
+    },
+    exterior: {
+      items: [
+        ...EXT_ITEMS,
+        ...OPT_FEATURES.filter(f => enabledFeatures[f.key])
+      ].map(i => ({
+        label: i.label, rating: getRating('ext', i.key), notes: getNotes('ext', i.key),
+        subValues: i.subfields ? i.subfields.map(sf => {
+          if (sf.type === 'checkboxes') {
+            const checked = sf.options.filter(o => {
+              const cb = document.getElementById(sf.id + '-' + o.replace(/[^a-z0-9]/gi,'_'));
+              return cb && cb.checked;
+            });
+            return checked.length ? { label: sf.label, value: checked.join(', ') } : null;
+          }
+          const val = (document.getElementById(sf.id) || {}).value || '';
+          return val ? { label: sf.label, value: val } : null;
+        }).filter(Boolean) : [],
+      })),
+      general: document.getElementById('ext-general').value.trim(),
+    },
+    pool: enabledFeatures['pool'] ? {
+      size:       document.getElementById('pool-size').value.trim(),
+      shape:      document.getElementById('pool-shape').value,
+      heating:    document.getElementById('pool-heating').value,
+      filtration: document.getElementById('pool-filtration').value,
+      chemicals:  document.getElementById('pool-chemicals').value,
+      cleaning:   document.getElementById('pool-cleaning').value,
+      notes:      document.getElementById('pool-notes').value.trim(),
+    } : null,
+    shed: enabledFeatures['shed'] ? {
+      size:       document.getElementById('shed-size').value.trim(),
+      doorHeight: document.getElementById('shed-door-height').value.trim(),
+      power:      getYN('shed-power'),
+      threePhase: getYN('shed-3phase'),
+      permits:    getYN('shed-permits'),
+      notes:      document.getElementById('shed-notes').value.trim(),
+    } : null,
+    solar: enabledFeatures['solar'] ? {
+      size:        document.getElementById('solar-size').value.trim(),
+      battery:     getYN('solar-battery'),
+      batterySize: getYN('solar-battery') === 'Yes' ? document.getElementById('solar-battery-size').value.trim() : '',
+      notes:       document.getElementById('solar-notes').value.trim(),
+    } : null,
+    interior: {
+      rooms: rooms.map(r => {
+        const nameEl  = document.querySelector(`#room-${r.id} .room-name-input`);
+        const notesEl = document.querySelector(`#room-${r.id} .rating-notes`);
+        // kitchen selects
+        const kitchenData = r.name && r.name.toLowerCase().includes('kitchen') ? {
+          oven:        (document.getElementById(`kit-oven-${r.id}`)   || {}).value || r.kitchen?.oven   || '',
+          stove:       (document.getElementById(`kit-stove-${r.id}`)  || {}).value || r.kitchen?.stove  || '',
+          pantry:      (document.getElementById(`kit-pantry-${r.id}`) || {}).value || r.kitchen?.pantry || '',
+          dishwasher:  r.kitchen?.dishwasher || false,
+        } : null;
+        const isBath = r.tag === TAG_BATH || r.name.toLowerCase().includes('bath') || r.name.toLowerCase().includes('ensuite') || r.name.toLowerCase().includes('powder');
+        const bathroomData = isBath ? {
+          showerSize: r.bathroom?.showerSize || '',
+          hasBath:    r.bathroom?.hasBath    || false,
+        } : null;
+        return {
+          name:       nameEl ? nameEl.value.trim() : r.name,
+          rating:     r.rating,
+          flooring:   r.flooring || [],
+          robes:      r.robes || [],
+          ceilingFan: r.ceilingFan || false,
+          kitchen:    kitchenData,
+          bathroom:   bathroomData,
+          notes:      notesEl ? notesEl.value.trim() : r.notes,
+        };
+      }),
+      general: document.getElementById('int-general').value.trim(),
+    },
+    systems: {
+      items: SYS_ITEMS.map(i => ({
+        label: i.label, rating: getRating('sys', i.key), notes: getNotes('sys', i.key),
+        subValues: i.subfields ? i.subfields.map(sf => {
+          if (sf.type === 'checkboxes') {
+            const checked = sf.options.filter(o => {
+              const cb = document.getElementById(sf.id + '-' + o.replace(/[^a-z0-9]/gi,'_'));
+              return cb && cb.checked;
+            });
+            return checked.length ? { label: sf.label, value: checked.join(', ') } : null;
+          }
+          const val = (document.getElementById(sf.id) || {}).value || '';
+          return val ? { label: sf.label, value: val } : null;
+        }).filter(Boolean) : [],
+      })),
+      general: document.getElementById('sys-general').value.trim(),
+    },
+  };
+}
+
+/* ============================================================
+   BUILD REPORT PREVIEW
+   ============================================================ */
+function buildReport() {
+  const d = collectData();
+  const el = document.getElementById('rpt-preview');
+
+  const addr = [d.property.address, d.property.city, d.property.state, d.property.zip]
+    .filter(Boolean).join(', ') || 'No address entered';
+
+  const meta = [
+    d.property.type,
+    d.property.year ? `Built ${d.property.year}` : '',
+    d.property.sqft ? `${Number(d.property.sqft).toLocaleString()} m²` : '',
+    d.property.beds  ? `${d.property.beds} bd` : '',
+    d.property.baths ? `${d.property.baths} ba` : '',
+    d.property.lot   ? d.property.lot : '',
+  ].filter(Boolean).join(' · ');
+
+  const confColor = { Low:'#FF3B30', Medium:'#FF9500', High:'#34C759' };
+  const cc = confColor[d.property.rpConfidence] || '#8e8e93';
+
+  let html = `
+    <div class="rpt-prop-name">${addr}</div>
+    <div class="rpt-prop-meta">
+      ${meta ? meta + '<br>' : ''}
+      ${d.property.date ? 'Date: <strong>' + fmtDate(d.property.date) + '</strong>' : ''}
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:12px;padding:14px 16px;margin-top:4px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--subtext);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">RP Data Estimate</div>
+        <div style="font-size:26px;font-weight:700;color:var(--blue)">$${d.property.rpPrice.toLocaleString('en-US')}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;font-weight:700;color:var(--subtext);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Confidence</div>
+        <span style="background:${cc}22;color:${cc};font-size:14px;font-weight:700;padding:5px 14px;border-radius:20px">${d.property.rpConfidence}</span>
+      </div>
+    </div>
+    ${(d.property.agentPrice || d.property.vendorPrice) ? `
+    <div style="margin-top:10px;padding:14px 16px;background:var(--bg);border-radius:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--subtext);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Valuation</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        ${d.property.agentPrice ? `<div style="flex:1;min-width:120px"><div style="font-size:11px;color:var(--subtext);margin-bottom:2px">Agent Appraisal</div><div style="font-size:20px;font-weight:700;color:var(--blue)">$${d.property.agentPrice.toLocaleString('en-US')}</div></div>` : ''}
+        ${d.property.vendorPrice ? `<div style="flex:1;min-width:120px"><div style="font-size:11px;color:var(--subtext);margin-bottom:2px">Vendor Expected</div><div style="font-size:20px;font-weight:700;color:#1c1c1e">$${d.property.vendorPrice.toLocaleString('en-US')}</div></div>` : ''}
+      </div>
+    </div>` : ''}
+  `;
+
+  html += rptSection('Exterior', d.exterior.items);
+
+  // Pool details block
+  if (d.pool) {
+    html += `<div class="rpt-section-title">🏊 Pool Details</div>`;
+    const poolFields = [
+      ['Size', d.pool.size], ['Shape', d.pool.shape],
+      ['Heating', d.pool.heating], ['Filtration', d.pool.filtration],
+      ['Chemicals / Sanitization', d.pool.chemicals],
+      ['Cleaning System',          d.pool.cleaning],
+    ].filter(([,v]) => v);
+    poolFields.forEach(([k,v]) => {
+      html += `<div class="rpt-row"><span class="rpt-row-name" style="color:var(--subtext)">${k}</span><span style="font-size:15px;font-weight:500">${esc(v)}</span></div>`;
+    });
+    if (d.pool.notes) html += `<div style="font-size:13px;color:var(--subtext);padding:6px 0">${esc(d.pool.notes)}</div>`;
+  }
+
+  if (d.shed) {
+    const ynBadge = v => {
+      if (!v) return '';
+      const col = v==='Yes'?'#34C759':v==='No'?'#FF3B30':'#8e8e93';
+      return `<span style="background:${col}22;color:${col};font-size:13px;font-weight:700;padding:3px 11px;border-radius:20px">${v}</span>`;
+    };
+    html += `<div class="rpt-section-title">🏚️ Shed / Outbuilding Details</div>`;
+    const shedFields = [
+      ['Size', d.shed.size], ['Roller Door Height', d.shed.doorHeight],
+    ].filter(([,v]) => v);
+    shedFields.forEach(([k,v]) => {
+      html += `<div class="rpt-row"><span class="rpt-row-name" style="color:var(--subtext)">${k}</span><span style="font-size:15px;font-weight:500">${esc(v)}</span></div>`;
+    });
+    const shedYN = [
+      ['Power Connected', d.shed.power],
+      ['3-Phase Power',   d.shed.threePhase],
+      ['Council Permits', d.shed.permits],
+    ].filter(([,v]) => v);
+    shedYN.forEach(([k,v]) => {
+      html += `<div class="rpt-row"><span class="rpt-row-name" style="color:var(--subtext)">${k}</span>${ynBadge(v)}</div>`;
+    });
+    if (d.shed.notes) html += `<div style="font-size:13px;color:var(--subtext);padding:6px 0">${esc(d.shed.notes)}</div>`;
+  }
+
+  if (d.solar) {
+    const ynBadge = v => {
+      if (!v) return '';
+      const col = v==='Yes'?'#34C759':v==='No'?'#FF3B30':'#8e8e93';
+      return `<span style="background:${col}22;color:${col};font-size:13px;font-weight:700;padding:3px 11px;border-radius:20px">${v}</span>`;
+    };
+    html += `<div class="rpt-section-title">☀️ Solar Details</div>`;
+    if (d.solar.size) html += `<div class="rpt-row"><span class="rpt-row-name" style="color:var(--subtext)">System Size</span><span style="font-size:15px;font-weight:500">${esc(d.solar.size)}</span></div>`;
+    if (d.solar.battery) html += `<div class="rpt-row"><span class="rpt-row-name" style="color:var(--subtext)">Battery Connected</span>${ynBadge(d.solar.battery)}</div>`;
+    if (d.solar.batterySize) html += `<div class="rpt-row"><span class="rpt-row-name" style="color:var(--subtext)">Battery Size</span><span style="font-size:15px;font-weight:500">${esc(d.solar.batterySize)}</span></div>`;
+    if (d.solar.notes) html += `<div style="font-size:13px;color:var(--subtext);padding:6px 0">${esc(d.solar.notes)}</div>`;
+  }
+
+  html += rptSection('Interior — Room by Room',
+    d.interior.rooms.map(r => {
+      const extras = [];
+      if (r.flooring && r.flooring.length) extras.push('Floor: ' + r.flooring.join(', '));
+      if (r.robes && r.robes.length) extras.push('Robes: ' + r.robes.join(', '));
+      if (r.ceilingFan) extras.push('🌀 Ceiling Fan');
+      if (r.bathroom) {
+        if (r.bathroom.showerSize) extras.push('Shower: ' + r.bathroom.showerSize);
+        if (r.bathroom.hasBath)    extras.push('🛁 Bath');
+      }
+      if (r.kitchen) {
+        if (r.kitchen.oven)       extras.push('Oven: ' + r.kitchen.oven);
+        if (r.kitchen.stove)      extras.push('Stove: ' + r.kitchen.stove);
+        if (r.kitchen.pantry)     extras.push('Pantry: ' + r.kitchen.pantry);
+        if (r.kitchen.dishwasher) extras.push('🍽️ Dishwasher');
+      }
+      const extraNote = extras.join(' · ');
+      const fullNote  = [extraNote, r.notes].filter(Boolean).join(' — ');
+      return { label: r.name, rating: r.rating, notes: fullNote };
+    }));
+  html += rptSection('Home Systems', d.systems.items);
+
+  el.innerHTML = html;
+}
+
+function rptSection(title, items) {
+  let html = `<div class="rpt-section-title">${title}</div>`;
+  items.forEach(item => {
+    const r = item.rating || '';
+    const cls = r === 'N/A' ? 'na' : (r || 'na');
+    html += `<div class="rpt-row">
+      <div style="flex:1">
+        <div class="rpt-row-name">${esc(item.label || 'Unnamed')}</div>
+        ${item.subValues && item.subValues.length ? `<div class="rpt-row-note">${item.subValues.map(sv => esc(sv.label) + ': ' + esc(sv.value)).join(' · ')}</div>` : ''}
+        ${item.notes ? `<div class="rpt-row-note">${esc(item.notes).substring(0,100)}${item.notes.length>100?'…':''}</div>` : ''}
+      </div>
+      ${r ? `<span class="badge ${cls}">${r}</span>` : '<span style="color:var(--subtext);font-size:13px">—</span>'}
+    </div>`;
+  });
+  return html;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ============================================================
+   PDF GENERATION
+   ============================================================ */
+function generatePDF() {
+  if (!window.jspdf) {
+    showToast('⚠️ PDF library not loaded yet. Please wait a moment and try again.');
+    return;
+  }
+
+  const d = collectData();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const PW = 210, PH = 297, M = 18, CW = PW - M * 2;
+  let y = M;
+
+  // Colors
+  const C = {
+    blue:   [107, 120,  56],
+    dark:   [28,  28,  30 ],
+    gray:   [110, 110, 115],
+    lgray:  [229, 229, 234],
+    bg:     [242, 242, 247],
+    green:  [52,  199, 89 ],
+    orange: [255, 149, 0  ],
+    red:    [255, 59,  48 ],
+    white:  [255, 255, 255],
+  };
+
+  function ratingRGB(r) {
+    if (r === 'Excellent' || r === 'Good') return C.green;
+    if (r === 'Fair')  return C.orange;
+    if (r === 'Poor')  return C.red;
+    return [142, 142, 147];
+  }
+
+  function checkPage(needed = 20) {
+    if (y + needed > PH - M - 14) {
+      doc.addPage();
+      y = M;
+      pageHeader();
+    }
+  }
+
+  function pageHeader() {
+    doc.setFillColor(...C.blue);
+    doc.rect(0, 0, PW, 11, 'F');
+    doc.setTextColor(...C.white);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    const a = [d.property.address, d.property.city, d.property.state]
+      .filter(Boolean).join(', ') || 'Home Appraisal';
+    doc.text(a, M, 7.5);
+    if (d.property.date) doc.text(fmtDate(d.property.date), PW - M, 7.5, { align:'right' });
+    y = Math.max(y, 17);
+  }
+
+  function addText(text, x, fontSize, color, style='normal', maxW=null) {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', style);
+    doc.setTextColor(...color);
+    if (maxW) {
+      const lines = doc.splitTextToSize(String(text), maxW);
+      lines.forEach(line => {
+        checkPage(fontSize * 0.45 + 2);
+        doc.text(line, x, y);
+        y += fontSize * 0.45;
+      });
+    } else {
+      doc.text(String(text), x, y);
+    }
+  }
+
+  // ── Cover strip ──────────────────────────────────
+  doc.setFillColor(...C.blue);
+  doc.rect(0, 0, PW, 62, 'F');
+
+  doc.setTextColor(...C.white);
+  const addrStr = [d.property.address, d.property.city, d.property.state, d.property.zip]
+    .filter(Boolean).join(', ') || 'Property Appraisal Report';
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  const addrLines = doc.splitTextToSize(addrStr, CW);
+  addrLines.forEach((line, i) => doc.text(line, PW/2, 27 + i*7, { align:'center' }));
+
+  const infoLine = d.property.date ? `Date: ${fmtDate(d.property.date)}` : '';
+  if (infoLine) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(infoLine, PW/2, 50, { align:'center' });
+  }
+
+  y = 72;
+
+  // ── Property Details Card ─────────────────────────
+  const detailRows = [
+    ['Property Type',  d.property.type],
+    ['Year Built',     d.property.year],
+    ['Area (m²)', d.property.sqft ? Number(d.property.sqft).toLocaleString() + ' m²' : ''],
+    ['Lot Size',       d.property.lot],
+    ['Bedrooms',       d.property.beds],
+    ['Bathrooms',      d.property.baths],
+  ].filter(([,v]) => v);
+
+  const cardH = Math.max(42, 14 + Math.ceil(detailRows.length / 2) * 9 + 4);
+  doc.setFillColor(...C.bg);
+  doc.roundedRect(M, y, CW, cardH, 3, 3, 'F');
+
+  doc.setTextColor(...C.blue);
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PROPERTY DETAILS', M + 7, y + 9);
+
+  const col1 = detailRows.slice(0, Math.ceil(detailRows.length / 2));
+  const col2 = detailRows.slice(Math.ceil(detailRows.length / 2));
+  const detY0 = y + 17;
+
+  col1.forEach(([label, val], i) => {
+    const ry = detY0 + i * 9;
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.gray); doc.setFontSize(9);
+    doc.text(label, M + 7, ry);
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark);
+    doc.text(String(val), M + 52, ry);
+  });
+  col2.forEach(([label, val], i) => {
+    const ry = detY0 + i * 9;
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.gray); doc.setFontSize(9);
+    doc.text(label, PW/2 + 3, ry);
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.dark);
+    doc.text(String(val), PW/2 + 44, ry);
+  });
+
+  y += cardH + 6;
+
+  if (d.property.notes) {
+    checkPage(20);
+    doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.gray); doc.setFontSize(8.5);
+    doc.text('GENERAL NOTES', M, y); y += 5;
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.dark); doc.setFontSize(10);
+    const nl = doc.splitTextToSize(d.property.notes, CW);
+    nl.forEach(line => { checkPage(6); doc.text(line, M, y); y += 5; });
+    y += 4;
+  }
+
+  // ── RP Data Estimate box ──────────────────────────
+  checkPage(26);
+  const rpBoxH = 22;
+  doc.setFillColor(...C.bg);
+  doc.roundedRect(M, y, CW, rpBoxH, 3, 3, 'F');
+
+  // Left: label + price
+  doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.gray); doc.setFontSize(7.5);
+  doc.text('RP DATA ESTIMATE', M + 7, y + 8);
+  doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.blue); doc.setFontSize(16);
+  doc.text('$' + d.property.rpPrice.toLocaleString('en-US'), M + 7, y + 18);
+
+  // Right: confidence badge
+  const confPDF = d.property.rpConfidence;
+  const confClr = confPDF === 'Low' ? C.red : confPDF === 'High' ? C.green : C.orange;
+  const badgeW = 30, bx = PW - M - badgeW - 6;
+  doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.gray); doc.setFontSize(7.5);
+  doc.text('CONFIDENCE', bx + badgeW/2, y + 8, { align:'center' });
+  doc.setFillColor(...confClr);
+  doc.roundedRect(bx, y + 11, badgeW, 8, 2, 2, 'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(9);
+  doc.text(confPDF, bx + badgeW/2, y + 16.5, { align:'center' });
+
+  y += rpBoxH + 6;
+
+  // ── Valuation box ─────────────────────────────────
+  if (d.property.agentPrice || d.property.vendorPrice) {
+    checkPage(24);
+    const vBoxH = 22;
+    doc.setFillColor(...C.bg);
+    doc.roundedRect(M, y, CW, vBoxH, 3, 3, 'F');
+    doc.setFont('helvetica','bold'); doc.setTextColor(...C.gray); doc.setFontSize(7.5);
+    doc.text('VALUATION', M + 7, y + 8);
+
+    const half = CW / 2 - 4;
+    if (d.property.agentPrice) {
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.gray); doc.setFontSize(8);
+      doc.text("Agent's Appraisal", M + 7, y + 14);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...C.blue); doc.setFontSize(14);
+      doc.text('$' + d.property.agentPrice.toLocaleString('en-US'), M + 7, y + 21);
+    }
+    if (d.property.vendorPrice) {
+      const cx = M + half + 8;
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.gray); doc.setFontSize(8);
+      doc.text("Vendor's Expected", cx, y + 14);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...C.dark); doc.setFontSize(14);
+      doc.text('$' + d.property.vendorPrice.toLocaleString('en-US'), cx, y + 21);
+    }
+    y += vBoxH + 6;
+  }
+
+  // ── Sections ──────────────────────────────────────
+  const sections = [
+    {
+      title: 'EXTERIOR CONDITION',
+      items: d.exterior.items,
+      general: d.exterior.general,
+    },
+    {
+      title: 'INTERIOR — ROOM BY ROOM',
+      items: d.interior.rooms.map(r => {
+        const extras = [];
+        if (r.flooring && r.flooring.length) extras.push('Floor: ' + r.flooring.join(', '));
+        if (r.robes && r.robes.length) extras.push('Robes: ' + r.robes.join(', '));
+        if (r.ceilingFan) extras.push('Ceiling Fan');
+        if (r.bathroom) {
+          if (r.bathroom.showerSize) extras.push('Shower: ' + r.bathroom.showerSize);
+          if (r.bathroom.hasBath)    extras.push('Bath');
+        }
+        if (r.kitchen) {
+          if (r.kitchen.oven)       extras.push('Oven: ' + r.kitchen.oven);
+          if (r.kitchen.stove)      extras.push('Stove: ' + r.kitchen.stove);
+          if (r.kitchen.pantry)     extras.push('Pantry: ' + r.kitchen.pantry);
+          if (r.kitchen.dishwasher) extras.push('Dishwasher');
+        }
+        const extraNote = extras.join(' · ');
+        return { label: r.name, rating: r.rating, notes: [extraNote, r.notes].filter(Boolean).join(' — ') };
+      }),
+      general: d.interior.general,
+    },
+    {
+      title: 'HOME SYSTEMS',
+      items: d.systems.items,
+      general: d.systems.general,
+    },
+  ];
+
+  sections.forEach(sec => {
+    y += 5;
+    checkPage(22);
+
+    // Section header bar
+    doc.setFillColor(...C.blue);
+    doc.rect(M, y, CW, 11, 'F');
+    doc.setTextColor(...C.white);
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica', 'bold');
+    doc.text(sec.title, M + 6, y + 7.8);
+    y += 15;
+
+    sec.items.forEach(item => {
+      const hasNotes = !!item.notes;
+      const rowH = hasNotes ? 9 + Math.min(item.notes.length > 100 ? 14 : 7, 20) : 9;
+      checkPage(rowH + 5);
+
+      // Row background
+      doc.setFillColor(...C.bg);
+      doc.roundedRect(M, y, CW, rowH + 2, 2, 2, 'F');
+
+      // Item label
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...C.dark);
+      doc.setFontSize(10.5);
+      doc.text(item.label || 'Item', M + 6, y + 7.5);
+
+      // Rating badge
+      const r = item.rating || '';
+      if (r) {
+        const badgeW = r.length > 4 ? 30 : 24;
+        const bx = PW - M - badgeW - 3;
+        doc.setFillColor(...ratingRGB(r));
+        doc.roundedRect(bx, y + 1.5, badgeW, 8, 2, 2, 'F');
+        doc.setTextColor(...C.white);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.text(r, bx + badgeW/2, y + 7, { align:'center' });
+      }
+
+      y += rowH + 2;
+
+      // Sub-values (e.g. Roof Type)
+      if (item.subValues && item.subValues.length) {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...C.gray);
+        doc.setFontSize(8.5);
+        const svLine = item.subValues.map(sv => sv.label + ': ' + sv.value).join('  ·  ');
+        checkPage(5);
+        doc.text(svLine, M + 6, y);
+        y += 5;
+      }
+
+      // Notes
+      if (hasNotes) {
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(...C.gray);
+        doc.setFontSize(8.5);
+        const nl = doc.splitTextToSize(item.notes, CW - 14);
+        nl.slice(0, 3).forEach(line => {
+          checkPage(5);
+          doc.text(line, M + 6, y);
+          y += 4.5;
+        });
+      }
+
+      y += 3;
+    });
+
+    if (sec.general) {
+      checkPage(18);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...C.gray); doc.setFontSize(8.5);
+      doc.text('GENERAL NOTES', M, y); y += 5;
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...C.dark); doc.setFontSize(10);
+      const nl = doc.splitTextToSize(sec.general, CW);
+      nl.forEach(line => { checkPage(6); doc.text(line, M, y); y += 5; });
+      y += 3;
+    }
+  });
+
+  // ── Pool Details (if present) ─────────────────────
+  if (d.pool) {
+    y += 5;
+    checkPage(22);
+
+    doc.setFillColor(0, 122, 255);
+    doc.rect(M, y, CW, 11, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica','bold');
+    doc.text('POOL DETAILS', M + 6, y + 7.8);
+    y += 15;
+
+    const poolFields = [
+      ['Size',                   d.pool.size],
+      ['Shape',                  d.pool.shape],
+      ['Heating',                d.pool.heating],
+      ['Filtration System',      d.pool.filtration],
+      ['Chemicals / Sanitization', d.pool.chemicals],
+      ['Cleaning System',          d.pool.cleaning],
+    ].filter(([,v]) => v);
+
+    poolFields.forEach(([label, val]) => {
+      checkPage(10);
+      doc.setFillColor(...C.bg);
+      doc.roundedRect(M, y, CW, 9, 2, 2, 'F');
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.gray); doc.setFontSize(9.5);
+      doc.text(label, M + 6, y + 6.5);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...C.dark); doc.setFontSize(10);
+      doc.text(String(val), M + 70, y + 6.5);
+      y += 12;
+    });
+
+    if (d.pool.notes) {
+      checkPage(16);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...C.gray); doc.setFontSize(8.5);
+      doc.text('NOTES', M, y); y += 5;
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.dark); doc.setFontSize(10);
+      const nl = doc.splitTextToSize(d.pool.notes, CW);
+      nl.forEach(line => { checkPage(6); doc.text(line, M, y); y += 5; });
+    }
+  }
+
+  // ── Shed Details (if present) ────────────────────
+  if (d.shed) {
+    y += 5;
+    checkPage(22);
+
+    doc.setFillColor(...C.blue);
+    doc.rect(M, y, CW, 11, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica','bold');
+    doc.text('SHED / OUTBUILDING DETAILS', M + 6, y + 7.8);
+    y += 15;
+
+    // Size & door fields
+    const shedTextFields = [
+      ['Size',               d.shed.size],
+      ['Roller Door Height', d.shed.doorHeight],
+    ].filter(([,v]) => v);
+
+    shedTextFields.forEach(([label, val]) => {
+      checkPage(10);
+      doc.setFillColor(...C.bg);
+      doc.roundedRect(M, y, CW, 9, 2, 2, 'F');
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.gray); doc.setFontSize(9.5);
+      doc.text(label, M + 6, y + 6.5);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...C.dark); doc.setFontSize(10);
+      doc.text(String(val), M + 70, y + 6.5);
+      y += 12;
+    });
+
+    // Yes/No fields
+    const shedYNFields = [
+      ['Power Connected', d.shed.power],
+      ['3-Phase Power',   d.shed.threePhase],
+      ['Council Permits', d.shed.permits],
+    ].filter(([,v]) => v);
+
+    shedYNFields.forEach(([label, val]) => {
+      checkPage(10);
+      const ynClr = val === 'Yes' ? C.green : val === 'No' ? C.red : [142,142,147];
+      doc.setFillColor(...C.bg);
+      doc.roundedRect(M, y, CW, 9, 2, 2, 'F');
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.gray); doc.setFontSize(9.5);
+      doc.text(label, M + 6, y + 6.5);
+      // Badge
+      const bw = 22, bx = PW - M - bw - 4;
+      doc.setFillColor(...ynClr);
+      doc.roundedRect(bx, y + 1, bw, 7, 2, 2, 'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.text(val, bx + bw/2, y + 6, { align:'center' });
+      y += 12;
+    });
+
+    if (d.shed.notes) {
+      checkPage(16);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...C.gray); doc.setFontSize(8.5);
+      doc.text('NOTES', M, y); y += 5;
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.dark); doc.setFontSize(10);
+      const nl = doc.splitTextToSize(d.shed.notes, CW);
+      nl.forEach(line => { checkPage(6); doc.text(line, M, y); y += 5; });
+    }
+  }
+
+  // ── Solar Details (if present) ───────────────────
+  if (d.solar) {
+    y += 5;
+    checkPage(22);
+
+    doc.setFillColor(...C.blue);
+    doc.rect(M, y, CW, 11, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(10.5);
+    doc.setFont('helvetica','bold');
+    doc.text('SOLAR DETAILS', M + 6, y + 7.8);
+    y += 15;
+
+    if (d.solar.size) {
+      checkPage(10);
+      doc.setFillColor(...C.bg);
+      doc.roundedRect(M, y, CW, 9, 2, 2, 'F');
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.gray); doc.setFontSize(9.5);
+      doc.text('System Size', M + 6, y + 6.5);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...C.dark); doc.setFontSize(10);
+      doc.text(d.solar.size, M + 70, y + 6.5);
+      y += 12;
+    }
+
+    if (d.solar.battery) {
+      checkPage(10);
+      const ynClr = d.solar.battery === 'Yes' ? C.green : d.solar.battery === 'No' ? C.red : [142,142,147];
+      doc.setFillColor(...C.bg);
+      doc.roundedRect(M, y, CW, 9, 2, 2, 'F');
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.gray); doc.setFontSize(9.5);
+      doc.text('Battery Connected', M + 6, y + 6.5);
+      const bw = 22, bx = PW - M - bw - 4;
+      doc.setFillColor(...ynClr);
+      doc.roundedRect(bx, y + 1, bw, 7, 2, 2, 'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.text(d.solar.battery, bx + bw/2, y + 6, { align:'center' });
+      y += 12;
+    }
+
+    if (d.solar.batterySize) {
+      checkPage(10);
+      doc.setFillColor(...C.bg);
+      doc.roundedRect(M, y, CW, 9, 2, 2, 'F');
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.gray); doc.setFontSize(9.5);
+      doc.text('Battery Size', M + 6, y + 6.5);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...C.dark); doc.setFontSize(10);
+      doc.text(d.solar.batterySize, M + 70, y + 6.5);
+      y += 12;
+    }
+
+    if (d.solar.notes) {
+      checkPage(16);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...C.gray); doc.setFontSize(8.5);
+      doc.text('NOTES', M, y); y += 5;
+      doc.setFont('helvetica','normal'); doc.setTextColor(...C.dark); doc.setFontSize(10);
+      const nl = doc.splitTextToSize(d.solar.notes, CW);
+      nl.forEach(line => { checkPage(6); doc.text(line, M, y); y += 5; });
+    }
+  }
+
+  // ── Footer on every page ──────────────────────────
+  const total = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    doc.setFillColor(...C.lgray);
+    doc.rect(0, PH - 12, PW, 12, 'F');
+    doc.setTextColor(...C.gray);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Page ${i} of ${total}`, PW - M, PH - 4.5, { align:'right' });
+  }
+
+  // ── Output — open in new tab for iPad share sheet ─
+  const slug = (d.property.address || 'Property').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+  const fname = `${slug}_Appraisal.pdf`;
+
+  try {
+    const blob = doc.output('blob');
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = fname;
+    a.target   = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('✅ PDF generated — check your Downloads or Share sheet!');
+  } catch(e) {
+    // Fallback: try save directly
+    doc.save(fname);
+    showToast('✅ PDF saved!');
+  }
+}
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function ynSelect(name, value) {
+  // Clear all options for this group
+  document.querySelectorAll(`[id^="${name}-"]`).forEach(el => {
+    el.classList.remove('selected-yes','selected-no','selected-unknown');
+  });
+  // Highlight selected
+  const cls = value === 'Yes' ? 'selected-yes' : value === 'No' ? 'selected-no' : 'selected-unknown';
+  document.getElementById(`${name}-${value.toLowerCase()}`).classList.add(cls);
+}
+
+function updateValDisplay() {
+  const agent  = parseFloat(document.getElementById('val-agent').value)  || 0;
+  const vendor = parseFloat(document.getElementById('val-vendor').value) || 0;
+  const el = document.getElementById('val-diff-display');
+  if (!agent || !vendor) { el.style.display = 'none'; return; }
+  const diff = agent - vendor;
+  const pct  = ((Math.abs(diff) / vendor) * 100).toFixed(1);
+  const above = diff >= 0;
+  el.style.display   = 'block';
+  el.style.background = above ? '#e5f9ec' : '#ffebea';
+  el.style.color      = above ? '#1a7a31' : '#9a1515';
+  el.textContent = above
+    ? `Agent is $${Math.abs(diff).toLocaleString()} (${pct}%) above vendor's expectation`
+    : `Agent is $${Math.abs(diff).toLocaleString()} (${pct}%) below vendor's expectation`;
+}
+
+function toggleSolarBattery(show) {
+  document.getElementById('solar-battery-size-field').style.display = show ? 'block' : 'none';
+}
+
+function getYN(name) {
+  const checked = document.querySelector(`input[name="${name}"]:checked`);
+  return checked ? checked.value : '';
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  const months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  return `${months[+m - 1]} ${+d}, ${y}`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+</script>
+</body>
+</html>
